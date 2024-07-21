@@ -10,6 +10,7 @@
 #include <functional>
 #include <future>
 #include <semaphore>
+#include <string_view>
 
 namespace wtf {
 
@@ -26,15 +27,22 @@ private:
   std::future<R> future;
   std::atomic<bool> stop{false};
 
+  constexpr static bool logging = false;
+  static void log(std::string_view sv) {
+    if constexpr(logging) {
+      std::cerr << sv << std::endl;
+    }
+  }
+
   static void worker_function(ReusableThread* t) {
     while (!t->stop.load(std::memory_order_relaxed)) {
-      std::cout << "worker: acquiring task_executable\n";
+      log("worker: acquiring task_executable");
       t->task_executable.acquire();
       if (t->stop.load(std::memory_order_relaxed)) break;
-      std::cout << "worker: running task\n";
+      log("worker: running task");
       t->current_task();
     }
-    std::cout << "worker: exiting\n";
+    log("worker: exiting");
   }
 
 public:
@@ -47,15 +55,15 @@ public:
   bool pre_execute_common() {
     if (thread.has_value()) {
       if (has_result()) {
-        std::cout << "execute: task complete, but result not retrieved\n";
+        log("execute: task complete, but result not retrieved");
         return false;
       }
       if (!is_ready()) {
-        std::cout << "execute: task not ready\n";
+        log("execute: task not ready");
         return false;
       }
     } else {
-      std::cout << "execute: creating new thread\n";
+      log("execute: creating new thread");
       thread = std::jthread{worker_function, this};
     }
     task_ready.acquire();
@@ -77,10 +85,10 @@ public:
           promise.set_value();
         } else {
           auto result = func();
-          std::cout << "task: setting result\n";
+          log("task: setting result");
           promise.set_value(result);
         }
-        std::cout << "task: releasing result_ready\n";
+        log("task: releasing result_ready");
       } catch (...) {  //
         promise.set_exception(std::current_exception());
       }
@@ -105,10 +113,10 @@ public:
           promise.set_value();
         } else {
           auto result = func();
-          std::cout << "task: setting result\n";
+          log("task: setting result");
           promise.set_value(result);
         }
-        std::cout << "task: releasing result_ready\n";
+        log("task: releasing result_ready");
       } catch (...) {  //
         promise.set_exception(std::current_exception());
       }
@@ -145,18 +153,18 @@ public:
       throw std::runtime_error("Task has no result");
     }
     if constexpr (std::is_void_v<R>) {
-      std::cout << "get_result(void)\n";
+      log("get_result(void)");
       future.get();
-      std::cout << "acquiring result_ready\n";
+      log("acquiring result_ready");
       result_ready.acquire();
-      std::cout << "releasing task_ready\n";
+      log("releasing task_ready");
       task_ready.release();
     } else {
-      std::cout << "getting result\n";
+      log("getting result");
       auto result = future.get();
-      std::cout << "acquiring result_ready\n";
+      log("acquiring result_ready");
       result_ready.acquire();
-      std::cout << "releasing task_ready\n";
+      log("releasing task_ready");
       task_ready.release();
       return result;
     }
@@ -164,13 +172,13 @@ public:
 
   void wait_for_completion() {
     if (is_ready()) {
-      std::cout << "wait_for_completion: task is ready, returning immediately\n";
+      log("wait_for_completion: task is ready, returning immediately");
       return;
     }
-    std::cout << "waiting for completion...\n";
+    log("waiting for completion...");
     result_ready.acquire();
     result_ready.release();
-    std::cout << "done waiting.\n";
+    log("done waiting.");
   }
 };
 

@@ -29,7 +29,7 @@ public:
   }
 
   template <class Func>
-  bool process_one_result(Func& processor) {
+  bool process_one_result(const Func& processor) {
     for (auto& thread : threads) {
       if (thread.has_result()) {
         if constexpr (std::is_void_v<R>) {
@@ -48,7 +48,7 @@ public:
   }
 
   template <class Func>
-  void process_all_results(Func& processor) {
+  void process_all_results(const Func& processor) {
     while (has_pending_tasks()) {
       wait_for_any_result();
       process_one_result(processor);
