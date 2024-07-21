@@ -82,16 +82,17 @@ public:
       try {
         if constexpr (std::is_void_v<R>) {
           func();
+          log("task: setting result");
           promise.set_value();
         } else {
           auto result = func();
           log("task: setting result");
           promise.set_value(result);
         }
-        log("task: releasing result_ready");
       } catch (...) {  //
         promise.set_exception(std::current_exception());
       }
+      log("task: releasing result_ready");
       result_ready.release();
     };
     task_executable.release();
@@ -106,7 +107,7 @@ public:
     std::promise<R> promise;
     future = promise.get_future();
     current_task = [this, pool, func = std::move(func),
-     promise = std::move(promise)]() mutable {
+      promise = std::move(promise)]() mutable {
       try {
         if constexpr (std::is_void_v<R>) {
           func();
@@ -121,7 +122,7 @@ public:
         promise.set_exception(std::current_exception());
       }
       result_ready.release();
-      pool->result_ready();
+      pool->notify_result_ready();
     };
     task_executable.release();
     return true;
@@ -170,15 +171,15 @@ public:
     }
   }
 
-  void wait_for_completion() {
+  void wait_for_result() {
     if (is_ready()) {
       log("wait_for_completion: task is ready, returning immediately");
       return;
     }
-    log("waiting for completion...");
+    log("waiting for result...");
     result_ready.acquire();
     result_ready.release();
-    log("done waiting.");
+    log("done waiting for result");
   }
 };
 

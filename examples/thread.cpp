@@ -29,9 +29,7 @@ int main() {
   }
   std::cout << "Correctly failed to execute task while thread was busy\n";
 
-  // Wait for the thread to be ready
-  thread.wait_for_completion();
-
+  thread.wait_for_result();
   if (!thread.has_result()) {
     std::cout << "No result for task 1!\n";
     std::abort();
@@ -52,7 +50,7 @@ int main() {
     std::abort();
   }
 
-  thread.wait_for_completion();
+  thread.wait_for_result();
   if (!thread.has_result()) {
     std::cout << "No result for task 2!\n";
     std::abort();

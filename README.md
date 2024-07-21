@@ -8,10 +8,9 @@ actually be a stop token.
 This pool is designed for use for only a special use case: when you have a quantity of
 work to do serially, and thus you depend (somehow) on the result of all of that work
 being completed, but you'd like to split the work up and execute it in parallel across
-multiple CPUs.
+multiple threads/CPUs.
 
 Think of it as a lower-overhead (due to thread re-use), and number-of-thread capped
-version of std::async. Submit work as fast as you can generate it (pool.execute() will
-block if all threads are busy), and wait for the results.
+version of std::async.
 
-Uses at least one C++23 feature for probably no particularly necessary reason.
+Uses C++20 features.
